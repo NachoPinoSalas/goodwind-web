@@ -8,6 +8,7 @@ const formulario = document.getElementById("buscador");
 const campoLatitud = document.getElementById("latitud");
 const campoLongitud = document.getElementById("longitud");
 const zonaResultado = document.getElementById("resultado");
+const botonesPantano = [...formulario.querySelectorAll("button[data-coordenadas]")]; // ninguno si no hay pantanos
 
 // Cada búsqueda tiene un número; si llega la respuesta de una anterior, se descarta.
 let ultimaBusqueda = 0;
@@ -19,10 +20,28 @@ function repartirPareja(texto) {
   return true;
 }
 
+// Se marca el botón del pantano cuyas coordenadas estén escritas, o ninguno.
+function marcarPantano() {
+  const pareja = `${campoLatitud.value.trim()};${campoLongitud.value.trim()}`;
+  for (const boton of botonesPantano) boton.setAttribute("aria-pressed", String(boton.dataset.coordenadas === pareja));
+}
+
 // Al pegar «40.757, -3.583» en Latitud se reparte entre los dos campos.
 campoLatitud.addEventListener("paste", (evento) => {
-  if (repartirPareja(evento.clipboardData?.getData("text") ?? "")) evento.preventDefault();
+  if (repartirPareja(evento.clipboardData?.getData("text") ?? "")) {
+    evento.preventDefault();
+    marcarPantano();
+  }
 });
+
+// Pulsar un pantano rellena sus coordenadas; cambiarlas a mano lo desmarca.
+for (const boton of botonesPantano) {
+  boton.addEventListener("click", () => {
+    repartirPareja(boton.dataset.coordenadas);
+    marcarPantano();
+  });
+}
+for (const campo of [campoLatitud, campoLongitud]) campo.addEventListener("input", marcarPantano);
 
 async function buscar() {
   if (campoLongitud.value.trim() === "") repartirPareja(campoLatitud.value);
@@ -53,5 +72,6 @@ if (leerEnlace(location.search) !== null) {
   campoLatitud.value = parametros.get("lat");
   campoLongitud.value = parametros.get("lon");
   formulario.elements.modelo.value = parametros.get("modelo") === "arome" ? "arome" : "estandar";
+  marcarPantano();
   buscar();
 }
